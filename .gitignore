@@ -79,6 +79,8 @@ logs/
 */ENV/
 */env.bak/
 */venv.bak/
+!scripts/env/
+!scripts/env/*.sh
 */.spyderproject
 */.spyproject
 */.ropeproject
