@@ -1,5 +1,6 @@
 import json
 import time
+import os
 from itertools import cycle
 import numpy as np
 import torch
@@ -145,6 +146,10 @@ class Engine:
                 self.model_dict = model_sst2_dict 
         else:
             self.model_dict = model_dict 
+        local_model_ckt = os.environ.get("PITOME_TC_LOCAL_MODEL")
+        if local_model_ckt:
+            self.model_dict = dict(self.model_dict)
+            self.model_dict[self.model_ckt] = local_model_ckt
         self.prepare_model(self.model_ckt, self.algo)
 
         self.config.tokenizer = self.tokenizer
