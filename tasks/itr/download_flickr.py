@@ -5,6 +5,7 @@
  For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
 """
 
+import argparse
 import os
 from pathlib import Path
 
@@ -29,6 +30,16 @@ print(
 )
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Download Flickr30k images for LAVIS.")
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Download again even if the final image directory already exists.",
+    )
+    return parser.parse_args()
+
+
 def move_directory(src_dir, dst_dir):
     """
     Move files from download_path to storage_path
@@ -45,6 +56,7 @@ def move_directory(src_dir, dst_dir):
 
 
 if __name__ == "__main__":
+    args = parse_args()
     import lavis 
     lavis_path = '/'.join(lavis.__file__.split('/')[:-1])
 
@@ -58,11 +70,12 @@ if __name__ == "__main__":
     download_dir = storage_dir.parent /"download"
     print(storage_dir)
 
-    if storage_dir.exists():
-        print(f"Dataset already exists at {storage_dir}. Aborting.")
+    image_dir = storage_dir / "flickr30k-images"
+    if image_dir.exists() and not args.force:
+        print(f"Dataset already exists at {image_dir}. Aborting.")
         exit(0)
 
-    os.makedirs(download_dir)
+    os.makedirs(download_dir, exist_ok=True)
 
     try:
         print("Downloading {} to {}".format(DATA_URL, download_dir))

@@ -1,8 +1,11 @@
-salesforce-lavis
-datasets
 accelerate
-timm==0.4.12 
+datasets
 ml_collections
 numpy==1.26.4
+opendatasets
 pandas==2.2.1
+salesforce-lavis
+timm==0.4.12
+tokenizers==0.15.1
+transformers==4.37.0
 wandb

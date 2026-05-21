@@ -8,7 +8,7 @@
 
 set -euo pipefail
 
-ROOT_DIR="${SLURM_SUBMIT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+ROOT_DIR="${SLURM_SUBMIT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 cd "$ROOT_DIR"
 
 ENV_NAME="${ENV_NAME:-pitome}"

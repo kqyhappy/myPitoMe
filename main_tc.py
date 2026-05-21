@@ -2,16 +2,7 @@ import torch.nn.functional as F
 import os
 
 from argparse import ArgumentParser
-from algo import (
-    PITOME,
-    TOME,
-    DIFFRATE,
-    TOFU,
-    DCT,
-    NONE,
-    MCTF,
-    CROSSGET
-)
+from algo import PITOME, TOME, NONE
 from tasks.tc.engine import Engine, BERT_BASE, DISTILBERT_BASE, BERT_LARGE, ALBERT
     
 
@@ -34,7 +25,7 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--task", default="imdb", choices=TASKS,
                         help="choose an LRA dataset from available options")
-    parser.add_argument("--algo", default=PITOME, choices=[PITOME, TOME, NONE, TOFU, DCT, DIFFRATE, MCTF, CROSSGET],
+    parser.add_argument("--algo", default=PITOME, choices=[PITOME, TOME, NONE],
                         help="choose an LRA dataset from available options")
     parser.add_argument("--model", default=BERT_BASE, choices=[BERT_BASE, DISTILBERT_BASE, BERT_LARGE, ALBERT],
                         help="choose an LRA dataset from available options")

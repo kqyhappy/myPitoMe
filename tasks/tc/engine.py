@@ -25,17 +25,9 @@ from accelerate import Accelerator
 from algo import (
     pitome, 
     tome,
-    tofu,
-    dct,
-    mctf,
-    crossget,
     PITOME,
     TOME,
-    TOFU,
-    DCT,
     NONE,
-    CROSSGET,
-    MCTF,
 )
 import wandb
 from tasks.tc.config import DATA_PATH
@@ -97,19 +89,11 @@ model_dict  = {
 BERT_PATCHES = {
     PITOME: pitome.patch.bert, 
     TOME: tome.patch.bert, 
-    TOFU: tofu.patch.bert, 
-    DCT: dct.patch.bert, 
-    MCTF: mctf.patch.bert, 
-    CROSSGET: crossget.patch.bert, 
     NONE: tome.patch.bert
 }
 DISTILBERT_PATCHES = {
     PITOME: pitome.patch.distilbert, 
     TOME: tome.patch.distilbert, 
-    TOFU: tofu.patch.distilbert, 
-    DCT: dct.patch.distilbert, 
-    MCTF: mctf.patch.distilbert, 
-    CROSSGET: crossget.patch.distilbert, 
     NONE: tome.patch.bert
 }
 class Engine:

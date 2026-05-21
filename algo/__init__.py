@@ -1,9 +1,7 @@
-# from .deit import apply_patch as deit
-# from .mae  import apply_patch as mae
-# import tome 
-# import pitome 
+from . import pitome, tome
 
 __all__ = ["tome", "pitome"]
 
-PITOME = 'pitome'
-TOME = 'tome'
+PITOME = "pitome"
+TOME = "tome"
+NONE = "none"

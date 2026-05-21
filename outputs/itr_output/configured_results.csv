@@ -1,0 +1,4 @@
+dataset,model,method,ratio,Ri@1,Ri@5,Ri@10,Rt@1,Rt@5,Rt@10,Rsum
+flickr30k,blip,none,1.0,83.50,96.64,98.30,94.43,99.60,100.00,572.44
+flickr30k,blip,tome,0.925,82.04,96.02,97.94,92.22,99.40,99.81,567.50
+flickr30k,blip,pitome,0.925,82.23,95.80,98.08,94.54,99.60,99.99,569.98

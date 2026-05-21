@@ -22,6 +22,7 @@ setup(
         "timm==0.4.12",
         "ml-collections",
         "numpy==1.26.4",
+        "opendatasets",
         "pandas==2.2.1",
         "wandb"
     ],

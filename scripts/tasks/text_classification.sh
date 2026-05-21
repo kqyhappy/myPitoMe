@@ -8,7 +8,7 @@
 
 set -euo pipefail
 
-ROOT_DIR="${SLURM_SUBMIT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+ROOT_DIR="${SLURM_SUBMIT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 cd "$ROOT_DIR"
 
 ENV_NAME="${ENV_NAME:-pitome}"
@@ -46,7 +46,7 @@ Examples:
   sbatch text_classification.sh tome
   sbatch text_classification.sh pitome eval bert-base-uncased
   sbatch text_classification.sh tome eval bert-base-uncased
-  sbatch --export=ALL,TASKS="imdb",RATIOS="0.80 0.70 0.60" text_classification.sh
+  sbatch --export=ALL,TASKS="imdb",RATIOS="0.90 0.80 0.70 0.60 0.50" text_classification.sh
   sbatch --export=ALL,HF_DATASET_CACHE=/path/to/huggingface_cache text_classification.sh
 
 Backward-compatible form:
@@ -76,10 +76,10 @@ if [[ "$MODE" != "eval" && "$MODE" != "train" ]]; then
 fi
 
 case "$ALGO" in
-  pitome|tome|tofu|dct|mctf|crossget|none)
+  pitome|tome|none)
     ;;
   *)
-    echo "ERROR: unsupported algo '$ALGO'. Supported algos: pitome tome tofu dct mctf crossget none." >&2
+    echo "ERROR: unsupported algo '$ALGO'. Supported algos: pitome tome none." >&2
     usage
     exit 1
     ;;
