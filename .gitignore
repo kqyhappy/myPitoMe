@@ -105,3 +105,8 @@ logs/
 *_results/
 data/
 outputs/
+!outputs/
+!outputs/itr_output/
+!outputs/itr_output/configured_results.csv
+!outputs/tc_outputs/
+!outputs/tc_outputs/*.csv
