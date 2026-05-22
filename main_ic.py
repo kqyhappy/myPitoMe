@@ -85,7 +85,7 @@ def filter_out_grayscale(example):
     return False
  
 def process_image(batch, transform):
-    images_tensor = torch.stack([transform(item['image']) for item in batch])
+    images_tensor = torch.stack([transform(item['image'].convert('RGB')) for item in batch])
     labels_tensor = torch.tensor([item['label'] for item in batch])
     return images_tensor, labels_tensor
 
@@ -272,21 +272,25 @@ def main(args):
     cudnn.benchmark = True
     args.data_path = DATA_PATH + '/.cache/'
     # args.data_set  = 'CIFAR'
-    dataset_train, args.nb_classes = utils.build_dataset(is_train=True, args=args)
-    dataset_val, _ = utils.build_dataset(is_train=False, args=args)
-    dataset_train = dataset_train.filter(filter_out_grayscale, num_proc=10)
-    dataset_val = dataset_val.filter(filter_out_grayscale, num_proc=10)
+    dataset_train = None
+    if args.eval:
+        dataset_val, args.nb_classes = utils.build_dataset(is_train=False, args=args)
+    else:
+        dataset_train, args.nb_classes = utils.build_dataset(is_train=True, args=args)
+        dataset_val, _ = utils.build_dataset(is_train=False, args=args)
 
     num_tasks = utils.get_world_size()
     global_rank = utils.get_rank()
-    if args.repeated_aug:
-        sampler_train = RASampler(
-            dataset_train, num_replicas=num_tasks, rank=global_rank, shuffle=True
-        )
-    else:
-        sampler_train = torch.utils.data.DistributedSampler(
-            dataset_train, num_replicas=num_tasks, rank=global_rank, shuffle=True
-        )
+    sampler_train = None
+    if not args.eval:
+        if args.repeated_aug:
+            sampler_train = RASampler(
+                dataset_train, num_replicas=num_tasks, rank=global_rank, shuffle=True
+            )
+        else:
+            sampler_train = torch.utils.data.DistributedSampler(
+                dataset_train, num_replicas=num_tasks, rank=global_rank, shuffle=True
+            )
     if args.dist_eval:
         if len(dataset_val) % num_tasks != 0:
             logger.info('Warning: Enabling distributed evaluation with an eval dataset not divisible by process number. '
@@ -297,16 +301,18 @@ def main(args):
     else:
         sampler_val = torch.utils.data.SequentialSampler(dataset_val)
 
-    train_transform =  build_transform(is_train=True, args=args) 
     eval_transform =  build_transform(is_train=False, args=args) 
-    data_loader_train = DataLoader(
-        dataset_train, sampler=sampler_train,
-        batch_size=args.batch_size,
-        num_workers=10,
-        pin_memory=True,
-        drop_last=True,
-        collate_fn=lambda batch: process_image(batch, train_transform),
-    )
+    data_loader_train = None
+    if not args.eval:
+        train_transform =  build_transform(is_train=True, args=args)
+        data_loader_train = DataLoader(
+            dataset_train, sampler=sampler_train,
+            batch_size=args.batch_size,
+            num_workers=10,
+            pin_memory=True,
+            drop_last=True,
+            collate_fn=lambda batch: process_image(batch, train_transform),
+        )
 
     data_loader_val = DataLoader(
         dataset_val, sampler=sampler_val,
@@ -319,7 +325,7 @@ def main(args):
 
     mixup_fn = None
     mixup_active = args.mixup > 0 or args.cutmix > 0. or args.cutmix_minmax is not None
-    if mixup_active:
+    if mixup_active and not args.eval:
         mixup_fn = Mixup(
             mixup_alpha=args.mixup, 
             cutmix_alpha=args.cutmix, 
@@ -383,33 +389,33 @@ def main(args):
 
     
     model = accelerator.prepare(model)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-    lr_scheduler = CosineLRScheduler(optimizer, t_initial=args.epochs, lr_min=args.min_lr) 
-    # lr_scheduler = ReduceLROnPlateau(optimizer, mode='max', patience=2, min_lr=args.min_lr)
-    loss_scaler = tasks.ic.utils.NativeScalerWithGradNormCount()
-    optimizer, lr_scheduler, data_loader_train, data_loader_val = accelerator.prepare(optimizer, lr_scheduler, data_loader_train, data_loader_val)
+    data_loader_val = accelerator.prepare(data_loader_val)
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     accelerator.print(f'number of params: {n_parameters}')
-    linear_scaled_lr = args.lr * args.batch_size * tasks.ic.utils.get_world_size() / 512.0
-    args.lr = linear_scaled_lr
 
     if args.eval:
         test_stats = evaluate(data_loader_val, model, accelerator)
         accelerator.print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
         test_stats['best acc'] = test_stats['acc1']
         return test_stats
-    else:
-        # pass
-        if accelerator.is_main_process:
-            wandb.init(
-                name=f'{args.model}-{args.algo}',
-                project=f'ic-{args.model}',
-                config={
-                    'compress_method': args.algo,
-                    'model': args.model,
-                    'ratio': args.ratio
-                }
-            )
+
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    lr_scheduler = CosineLRScheduler(optimizer, t_initial=args.epochs, lr_min=args.min_lr) 
+    # lr_scheduler = ReduceLROnPlateau(optimizer, mode='max', patience=2, min_lr=args.min_lr)
+    loss_scaler = tasks.ic.utils.NativeScalerWithGradNormCount()
+    optimizer, lr_scheduler, data_loader_train = accelerator.prepare(optimizer, lr_scheduler, data_loader_train)
+    linear_scaled_lr = args.lr * args.batch_size * tasks.ic.utils.get_world_size() / 512.0
+    args.lr = linear_scaled_lr
+    if accelerator.is_main_process:
+        wandb.init(
+            name=f'{args.model}-{args.algo}',
+            project=f'ic-{args.model}',
+            config={
+                'compress_method': args.algo,
+                'model': args.model,
+                'ratio': args.ratio
+            }
+        )
  
     criterion = LabelSmoothingCrossEntropy()
 

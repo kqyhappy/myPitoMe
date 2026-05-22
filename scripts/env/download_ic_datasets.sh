@@ -15,6 +15,10 @@ ENV_NAME="${ENV_NAME:-pitome}"
 DATASET="${1:-${DATASET:-imagenet-1k}}"
 IC_CACHE_DIR="${IC_CACHE_DIR:-$ROOT_DIR/data/ic}"
 HF_TOKEN_FILE="${HF_TOKEN_FILE:-}"
+IMAGENET_EXPORT_DIR="${IMAGENET_EXPORT_DIR:-}"
+UPLOAD_TO="${UPLOAD_TO:-}"
+UPLOAD_SOURCE="${UPLOAD_SOURCE:-}"
+DELETE_REMOTE="${DELETE_REMOTE:-0}"
 
 usage() {
   cat <<USAGE
@@ -31,12 +35,17 @@ Examples:
   sbatch --export=ALL,IC_CACHE_DIR=/path/to/cache scripts/env/download_ic_datasets.sh
   sbatch --export=ALL,HF_TOKEN=hf_xxx scripts/env/download_ic_datasets.sh
   sbatch --export=ALL,HF_TOKEN_FILE=/path/to/hf_token scripts/env/download_ic_datasets.sh
+  sbatch --export=ALL,UPLOAD_TO=user@server:/data/imagenet1k/ scripts/env/download_ic_datasets.sh
+  sbatch --export=ALL,IMAGENET_EXPORT_DIR=/data/imagenet1k_imagefolder scripts/env/download_ic_datasets.sh
 
 Notes:
   ImageNet-1k on Hugging Face is gated. Make sure your account has access and
   either run 'huggingface-cli login' beforehand or pass HF_TOKEN through sbatch.
   You can also store the token in a private file and pass HF_TOKEN_FILE.
   Passing HF_TOKEN only works after Hugging Face has approved your access.
+
+  UPLOAD_TO uses rsync syntax, for example user@server:/data/imagenet1k/.
+  Set DELETE_REMOTE=1 to mirror-delete files on the remote target.
 USAGE
 }
 
@@ -75,38 +84,38 @@ then
   exit 1
 fi
 
-echo "Caching Hugging Face dataset 'imagenet-1k' under $IC_CACHE_DIR"
-IC_CACHE_DIR="$IC_CACHE_DIR" python - <<'PY'
-import os
-import sys
-from datasets import load_dataset
+cmd=(
+  python scripts/env/download_imagenet1k.py
+  --dataset-name "$DATASET"
+  --cache-dir "$IC_CACHE_DIR"
+)
 
-cache_dir = os.environ["IC_CACHE_DIR"]
-token = os.environ.get("HF_TOKEN") or None
+if [[ -n "${HF_TOKEN:-}" ]]; then
+  cmd+=(--hf-token "$HF_TOKEN")
+fi
 
-kwargs = {"cache_dir": cache_dir}
-if token:
-    kwargs["token"] = token
+if [[ -n "$HF_TOKEN_FILE" ]]; then
+  cmd+=(--hf-token-file "$HF_TOKEN_FILE")
+fi
 
-try:
-    dataset = load_dataset("imagenet-1k", **kwargs)
-except Exception as exc:
-    message = str(exc)
-    if "gated dataset" in message or "ask for access" in message:
-        print(
-            "ERROR: Hugging Face denied access to the gated dataset 'imagenet-1k'.\n"
-            "Open https://huggingface.co/datasets/imagenet-1k and request access first.\n"
-            "After access is approved, either run 'huggingface-cli login' on the cluster\n"
-            "or submit with: sbatch --export=ALL,HF_TOKEN=hf_xxx scripts/env/download_ic_datasets.sh",
-            file=sys.stderr,
-        )
-        sys.exit(2)
-    raise
+if [[ -n "$IMAGENET_EXPORT_DIR" ]]; then
+  cmd+=(--export-imagefolder "$IMAGENET_EXPORT_DIR")
+fi
 
-print(f"Cached imagenet-1k at {cache_dir}")
-for split, split_dataset in dataset.items():
-    print(f"{split}: {len(split_dataset)} examples")
-PY
+if [[ -n "$UPLOAD_TO" ]]; then
+  cmd+=(--upload-to "$UPLOAD_TO")
+fi
+
+if [[ -n "$UPLOAD_SOURCE" ]]; then
+  cmd+=(--upload-source "$UPLOAD_SOURCE")
+fi
+
+if [[ "$DELETE_REMOTE" == "1" || "$DELETE_REMOTE" == "true" ]]; then
+  cmd+=(--delete-remote)
+fi
+
+echo "Caching Hugging Face dataset '$DATASET' under $IC_CACHE_DIR"
+"${cmd[@]}"
 
 echo
 echo "ImageNet-1k download finished."

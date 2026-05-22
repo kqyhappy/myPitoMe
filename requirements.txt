@@ -1,11 +1,17 @@
 accelerate
 datasets
+matplotlib
 ml_collections
 numpy==1.26.4
+omegaconf
 opendatasets
 pandas==2.2.1
+Pillow
 salesforce-lavis
+scikit-image
+termcolor
 timm==0.4.12
 tokenizers==0.15.1
+tqdm
 transformers==4.37.0
 wandb
