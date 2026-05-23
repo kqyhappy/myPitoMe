@@ -154,12 +154,6 @@ Run image-text retrieval evaluation:
 bash scripts/eval_scripts/eval_itr_assignment.sh
 ```
 
-On a Slurm cluster, the same script can be submitted with `sbatch`:
-
-```bash
-sbatch scripts/eval_scripts/eval_itr_assignment.sh
-```
-
 The script uses the BLIP/Flickr30k config at:
 
 ```text
